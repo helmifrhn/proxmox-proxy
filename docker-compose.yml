@@ -1,0 +1,47 @@
+version: '3'
+services:
+  nginx:
+    container_name: proxynginx
+    image: nginx:latest
+    restart: always
+    ports:
+      - 8443:443
+    volumes:
+      - ./nginx/site.conf/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/localhost.pem:/etc/ssl/certs/localhost.pem
+      - ./nginx/localhost.crt:/etc/ssl/certs/localhost.crt
+      - ./nginx/localhost.key:/etc/ssl/certs/localhost.key
+      - ./src:/var/www/html
+      - ./.env:/var/www/html/.env
+    depends_on:
+      - proxydb
+    networks:
+      - network
+  php:
+    container_name: proxyphp
+    image: php:7.4-fpm
+    restart: always
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    volumes:
+      - ./src:/var/www/html
+      - ./.env:/var/www/html/.env
+    networks:
+      - network
+  proxydb:
+    image: mysql
+    restart: always
+    container_name: proxydb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    networks:
+      - network
+networks:
+  network:
+    driver: bridge
